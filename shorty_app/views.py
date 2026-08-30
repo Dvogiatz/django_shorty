@@ -2,6 +2,7 @@ from django.shortcuts import render, HttpResponse, redirect, get_object_or_404
 from django.utils import timezone
 from django.http import Http404
 from .models import TodoItem, Url
+from .forms import UrlForm
 import random
 import string
 
@@ -25,12 +26,16 @@ def todos(request):
 def shorty(request):
     short_url = None
     if request.method == "POST":
-        original_url = request.POST.get("original_url")
-        if original_url:
-            code = generate_short_code()
-            Url.objects.create(original_url=original_url, short_code=code)
-            short_url = request.build_absolute_uri(f"/shorty/{code}/")
-    return render(request, "shorty.html", {"short_url": short_url})
+        form = UrlForm(request.POST)
+        if form.is_valid():
+            url = form.save(commit=False)
+            url.short_code = generate_short_code()
+            url.save()
+            short_url = request.build_absolute_uri(f"/shorty/{url.short_code}/")
+            form = UrlForm()
+    else:
+        form = UrlForm()
+    return render(request, "shorty.html", {"form": form, "short_url": short_url})
 
 def redirect_short_url(request, short_code):
     url = get_object_or_404(Url, short_code=short_code)

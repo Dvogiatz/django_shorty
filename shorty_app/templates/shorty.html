@@ -3,8 +3,11 @@
 <form method="post">
     {% csrf_token %}
     <div class="form-group">
-        <label for="original_url">Enter a URL to shorten</label>
-        <input type="url" name="original_url" id="original_url" class="form-control" required>
+        {{ form.original_url.label_tag }}
+        {{ form.original_url }}
+        {% if form.original_url.errors %}
+        <div class="text-danger">{{ form.original_url.errors }}</div>
+        {% endif %}
     </div>
     <button type="submit" class="btn btn-primary">Shorten</button>
 </form>
