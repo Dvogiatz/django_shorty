@@ -1,7 +1,7 @@
 from django.shortcuts import render, HttpResponse, redirect, get_object_or_404
 from django.utils import timezone
 from django.http import Http404
-from .models import TodoItem, Url
+from .models import Url
 from .forms import UrlForm
 import random
 import string
@@ -18,10 +18,6 @@ def generate_short_code(length=6):
 # Create your views here.
 def home(request):
     return render(request, "home.html")
-
-def todos(request):
-    items = TodoItem.objects.all()
-    return render(request, "todos.html", {"todos": items})
 
 def shorty(request):
     short_url = None
