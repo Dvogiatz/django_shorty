@@ -3,5 +3,7 @@ from . import views
 
 urlpatterns = [
     path("", views.home, name="home"),
-    path("todos/", views.todos, name="todos")
+    path("todos/", views.todos, name="todos"),
+    path("shorty/", views.shorty, name="shorty"),
+    path("shorty/<str:short_code>/", views.redirect_short_url, name="redirect_short_url"),
 ]

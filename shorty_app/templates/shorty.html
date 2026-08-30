@@ -1,0 +1,17 @@
+{% extends "base.html" %} {% block content %}
+<h1>URL Shortener</h1>
+<form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="original_url">Enter a URL to shorten</label>
+        <input type="url" name="original_url" id="original_url" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Shorten</button>
+</form>
+
+{% if short_url %}
+<div class="alert alert-success mt-3">
+    Your shortened URL: <a href="{{ short_url }}">{{ short_url }}</a>
+</div>
+{% endif %}
+{% endblock %}
