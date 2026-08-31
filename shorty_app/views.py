@@ -16,9 +16,6 @@ def generate_short_code(length=6):
             return code
 
 # Create your views here.
-def home(request):
-    return render(request, "home.html")
-
 def shorty(request):
     short_url = None
     if request.method == "POST":
