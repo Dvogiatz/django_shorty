@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -18,6 +18,41 @@ class UrlModelTests(TestCase):
         Url.objects.create(original_url="https://example.com", short_code="dup123")
         with self.assertRaises(Exception):
             Url.objects.create(original_url="https://other.com", short_code="dup123")
+
+
+class EnforceCapacityTests(TestCase):
+    def _make(self, short_code, created_days_ago=0, expired=False):
+        url = Url.objects.create(original_url="https://example.com", short_code=short_code)
+        updates = {"created_at": timezone.now() - timedelta(days=created_days_ago)}
+        if expired:
+            updates["expires_at"] = timezone.now() - timedelta(days=1)
+        Url.objects.filter(pk=url.pk).update(**updates)
+        return url
+
+    @override_settings(MAX_URLS=3)
+    def test_under_capacity_does_nothing(self):
+        self._make("a1")
+        self._make("a2")
+        Url.enforce_capacity()
+        self.assertEqual(Url.objects.count(), 2)
+
+    @override_settings(MAX_URLS=3)
+    def test_at_capacity_deletes_expired_first(self):
+        self._make("b1", created_days_ago=3, expired=True)
+        self._make("b2", created_days_ago=2)
+        self._make("b3", created_days_ago=1)
+        Url.enforce_capacity()
+        remaining = set(Url.objects.values_list("short_code", flat=True))
+        self.assertEqual(remaining, {"b2", "b3"})
+
+    @override_settings(MAX_URLS=3)
+    def test_at_capacity_with_no_expired_evicts_oldest(self):
+        self._make("c1", created_days_ago=3)
+        self._make("c2", created_days_ago=2)
+        self._make("c3", created_days_ago=1)
+        Url.enforce_capacity()
+        remaining = set(Url.objects.values_list("short_code", flat=True))
+        self.assertEqual(remaining, {"c2", "c3"})
 
 
 class UrlFormTests(TestCase):
@@ -47,6 +82,16 @@ class ShortenViewTests(TestCase):
         response = self.client.post(reverse("shorty"), {"original_url": "not-a-url"})
         self.assertEqual(Url.objects.count(), 0)
         self.assertContains(response, "Enter a valid URL.")
+
+    @override_settings(MAX_URLS=2)
+    def test_post_at_capacity_evicts_to_stay_under_cap(self):
+        Url.objects.create(original_url="https://example.com/1", short_code="old001")
+        Url.objects.filter(short_code="old001").update(created_at=timezone.now() - timedelta(days=1))
+        Url.objects.create(original_url="https://example.com/2", short_code="old002")
+        response = self.client.post(reverse("shorty"), {"original_url": "https://example.com/3"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Url.objects.count(), 2)
+        self.assertFalse(Url.objects.filter(short_code="old001").exists())
 
 
 class RedirectViewTests(TestCase):

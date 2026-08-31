@@ -21,6 +21,7 @@ def shorty(request):
     if request.method == "POST":
         form = UrlForm(request.POST)
         if form.is_valid():
+            Url.enforce_capacity()
             url = form.save(commit=False)
             url.short_code = generate_short_code()
             url.save()

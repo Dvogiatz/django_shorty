@@ -151,3 +151,7 @@ STORAGES = {
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Hard cap on how many Url rows can exist at once, to bound storage growth
+# from unbounded shortening requests. Enforced in Url.enforce_capacity().
+MAX_URLS = int(os.environ.get('MAX_URLS', 10000))

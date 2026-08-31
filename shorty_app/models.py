@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
@@ -16,3 +17,14 @@ class Url(models.Model):
 
     def __str__(self):
         return self.short_code
+
+    @classmethod
+    def enforce_capacity(cls):
+        max_urls = settings.MAX_URLS
+        if cls.objects.count() < max_urls:
+            return
+        cls.objects.filter(expires_at__lt=timezone.now()).delete()
+        if cls.objects.count() >= max_urls:
+            oldest = cls.objects.order_by('created_at').first()
+            if oldest:
+                oldest.delete()
