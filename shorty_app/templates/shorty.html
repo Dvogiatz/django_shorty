@@ -1,20 +1,21 @@
 {% extends "base.html" %} {% block content %}
-<h1>URL Shortener</h1>
+<h1 class="page-title">URL Shortener</h1>
+<p class="subtitle">Paste a long URL below to get a short link.</p>
+
 <form method="post">
     {% csrf_token %}
-    <div class="form-group">
-        {{ form.original_url.label_tag }}
-        {{ form.original_url }}
-        {% if form.original_url.errors %}
-        <div class="text-danger">{{ form.original_url.errors }}</div>
-        {% endif %}
-    </div>
-    <button type="submit" class="btn btn-primary">Shorten</button>
+    {{ form.original_url.label_tag }}
+    {{ form.original_url }}
+    {% if form.original_url.errors %}
+    <div class="error-text">{{ form.original_url.errors }}</div>
+    {% endif %}
+    <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Shorten</button>
 </form>
 
 {% if short_url %}
-<div class="alert alert-success mt-3">
-    Your shortened URL: <a href="{{ short_url }}">{{ short_url }}</a>
+<div class="result-card">
+    <p class="label">Your short link</p>
+    <a href="{{ short_url }}">{{ short_url }}</a>
 </div>
 {% endif %}
 {% endblock %}

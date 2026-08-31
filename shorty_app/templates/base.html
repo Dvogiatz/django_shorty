@@ -1,41 +1,26 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <meta charset"UTF-8" />
-        <meta name="viewport" content="width=device-widgth, initial-scale=1.0" />
-        <title>
-            {% block title %}
-                Django App
-            {% endblock %}
-        </title>
-        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet" />
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{% block title %}URL Shortener — dvogiatz{% endblock %}</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet" />
+        <link rel="stylesheet" href="{% static 'shorty_app/css/style.css' %}" />
     </head>
     <body>
-        <nav class="navbar navbar-expand-lg navbar-light bg-light">
-            <a class="navbar-brand" href="#">
-                {% block menu %}
-                My Django App
-                {% endblock %}
-            </a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item active">
-                        <a class="nav-link" href="#">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">About</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Contact</a>
-                    </li>
-                </ul>
+        <header class="site-header">
+            <div class="header-inner">
+                <a href="https://dvogiatz.com/" class="brand">
+                    <span class="bracket" aria-hidden="true">&lt;/&gt;</span>
+                    <span>dvogiatz</span>
+                </a>
             </div>
-        </nav>
-        <div class="container">{% block content %} {% endblock %}</div>
-        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
-        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+        </header>
+        <main>
+            {% block content %}{% endblock %}
+        </main>
     </body>
 </html>

@@ -12,7 +12,6 @@ class UrlForm(forms.ModelForm):
         }
         widgets = {
             'original_url': forms.URLInput(attrs={
-                'class': 'form-control',
                 'placeholder': 'https://example.com/very/long/path',
             }),
         }
