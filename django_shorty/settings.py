@@ -155,3 +155,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Hard cap on how many Url rows can exist at once, to bound storage growth
 # from unbounded shortening requests. Enforced in Url.enforce_capacity().
 MAX_URLS = int(os.environ.get('MAX_URLS', 10000))
+
+# Google Safe Browsing API key, used to reject known-malicious URLs at
+# creation time (see shorty_app/safety.py). If unset, the check is skipped
+# rather than blocking link creation.
+SAFE_BROWSING_API_KEY = os.environ.get('SAFE_BROWSING_API_KEY', '')

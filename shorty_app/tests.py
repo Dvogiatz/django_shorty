@@ -1,4 +1,6 @@
+import urllib.error
 from datetime import timedelta
+from unittest.mock import MagicMock, patch
 
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -6,6 +8,7 @@ from django.utils import timezone
 
 from .forms import UrlForm
 from .models import Url
+from .safety import is_url_flagged_unsafe
 
 
 class UrlModelTests(TestCase):
@@ -63,6 +66,48 @@ class UrlFormTests(TestCase):
     def test_invalid_url_is_rejected(self):
         form = UrlForm({"original_url": "not-a-url"})
         self.assertFalse(form.is_valid())
+
+    def test_flagged_unsafe_url_is_rejected(self):
+        with patch("shorty_app.forms.is_url_flagged_unsafe", return_value=True):
+            form = UrlForm({"original_url": "https://malicious.example.com"})
+            self.assertFalse(form.is_valid())
+            self.assertIn("flagged as unsafe", str(form.errors))
+
+
+class SafetyCheckTests(TestCase):
+    @override_settings(SAFE_BROWSING_API_KEY="")
+    def test_skips_check_when_no_api_key_configured(self):
+        with patch("shorty_app.safety.urllib.request.urlopen") as mock_urlopen:
+            result = is_url_flagged_unsafe("https://example.com")
+        self.assertFalse(result)
+        mock_urlopen.assert_not_called()
+
+    @override_settings(SAFE_BROWSING_API_KEY="fake-key")
+    def test_flags_url_with_matches(self):
+        mock_response = MagicMock()
+        mock_response.read.return_value = b'{"matches": [{"threatType": "MALWARE"}]}'
+        mock_response.__enter__.return_value = mock_response
+        with patch("shorty_app.safety.urllib.request.urlopen", return_value=mock_response):
+            result = is_url_flagged_unsafe("https://bad.example.com")
+        self.assertTrue(result)
+
+    @override_settings(SAFE_BROWSING_API_KEY="fake-key")
+    def test_allows_url_with_no_matches(self):
+        mock_response = MagicMock()
+        mock_response.read.return_value = b"{}"
+        mock_response.__enter__.return_value = mock_response
+        with patch("shorty_app.safety.urllib.request.urlopen", return_value=mock_response):
+            result = is_url_flagged_unsafe("https://example.com")
+        self.assertFalse(result)
+
+    @override_settings(SAFE_BROWSING_API_KEY="fake-key")
+    def test_fails_open_on_network_error(self):
+        with patch(
+            "shorty_app.safety.urllib.request.urlopen",
+            side_effect=urllib.error.URLError("boom"),
+        ):
+            result = is_url_flagged_unsafe("https://example.com")
+        self.assertFalse(result)
 
 
 class ShortenViewTests(TestCase):
