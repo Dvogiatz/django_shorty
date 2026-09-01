@@ -28,3 +28,11 @@ class Url(models.Model):
             oldest = cls.objects.order_by('created_at').first()
             if oldest:
                 oldest.delete()
+
+
+class FlaggedUrlAttempt(models.Model):
+    url = models.URLField(max_length=2048)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.url

@@ -6,6 +6,8 @@ from urllib.parse import urlparse
 
 from django.conf import settings
 
+from .models import FlaggedUrlAttempt
+
 logger = logging.getLogger(__name__)
 
 SAFE_BROWSING_ENDPOINT = "https://safebrowsing.googleapis.com/v4/threatMatches:find"
@@ -65,4 +67,7 @@ def is_url_flagged_unsafe(url):
         logger.warning("Safe Browsing check failed, allowing URL through: %s", exc)
         return False
 
-    return bool(result.get("matches"))
+    is_flagged = bool(result.get("matches"))
+    if is_flagged:
+        FlaggedUrlAttempt.objects.create(url=url)
+    return is_flagged

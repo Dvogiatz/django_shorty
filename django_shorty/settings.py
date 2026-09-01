@@ -160,3 +160,14 @@ MAX_URLS = int(os.environ.get('MAX_URLS', 10000))
 # creation time (see shorty_app/safety.py). If unset, the check is skipped
 # rather than blocking link creation.
 SAFE_BROWSING_API_KEY = os.environ.get('SAFE_BROWSING_API_KEY', '')
+
+# Email, used only for the daily flagged-URL report
+# (shorty_app/management/commands/send_flagged_url_report.py).
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+REPORT_RECIPIENT_EMAIL = os.environ.get('REPORT_RECIPIENT_EMAIL', '')

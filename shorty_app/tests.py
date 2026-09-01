@@ -2,12 +2,14 @@ import urllib.error
 from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
+from django.core import mail
+from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
 from .forms import UrlForm
-from .models import Url
+from .models import FlaggedUrlAttempt, Url
 from .safety import is_url_flagged_unsafe, is_url_from_another_shortener
 
 
@@ -104,6 +106,7 @@ class SafetyCheckTests(TestCase):
         with patch("shorty_app.safety.urllib.request.urlopen", return_value=mock_response):
             result = is_url_flagged_unsafe("https://bad.example.com")
         self.assertTrue(result)
+        self.assertTrue(FlaggedUrlAttempt.objects.filter(url="https://bad.example.com").exists())
 
     @override_settings(SAFE_BROWSING_API_KEY="fake-key")
     def test_allows_url_with_no_matches(self):
@@ -170,3 +173,34 @@ class RedirectViewTests(TestCase):
         response = self.client.get(reverse("redirect_short_url", args=["expired1"]))
         self.assertEqual(response.status_code, 404)
         self.assertFalse(Url.objects.filter(pk=url.pk).exists())
+
+
+@override_settings(REPORT_RECIPIENT_EMAIL="admin@example.com", DEFAULT_FROM_EMAIL="bot@example.com")
+class SendFlaggedUrlReportCommandTests(TestCase):
+    def test_no_attempts_sends_no_email(self):
+        call_command("send_flagged_url_report")
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_sends_report_and_clears_records(self):
+        FlaggedUrlAttempt.objects.create(url="https://bad.example.com/1")
+        FlaggedUrlAttempt.objects.create(url="https://bad.example.com/2")
+        FlaggedUrlAttempt.objects.create(url="https://other-bad.example.com/1")
+
+        call_command("send_flagged_url_report")
+
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.to, ["admin@example.com"])
+        self.assertIn("3 unsafe URL(s)", sent.subject)
+        self.assertIn("bad.example.com: 2", sent.body)
+        self.assertIn("https://other-bad.example.com/1", sent.body)
+        self.assertEqual(FlaggedUrlAttempt.objects.count(), 0)
+
+    @override_settings(REPORT_RECIPIENT_EMAIL="")
+    def test_missing_recipient_skips_send_and_keeps_records(self):
+        FlaggedUrlAttempt.objects.create(url="https://bad.example.com/1")
+
+        call_command("send_flagged_url_report")
+
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(FlaggedUrlAttempt.objects.count(), 1)
