@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from .forms import UrlForm
 from .models import Url
-from .safety import is_url_flagged_unsafe
+from .safety import is_url_flagged_unsafe, is_url_from_another_shortener
 
 
 class UrlModelTests(TestCase):
@@ -59,6 +59,7 @@ class EnforceCapacityTests(TestCase):
 
 
 class UrlFormTests(TestCase):
+    @override_settings(SAFE_BROWSING_API_KEY="")
     def test_valid_url_passes(self):
         form = UrlForm({"original_url": "https://example.com/page"})
         self.assertTrue(form.is_valid())
@@ -73,8 +74,21 @@ class UrlFormTests(TestCase):
             self.assertFalse(form.is_valid())
             self.assertIn("flagged as unsafe", str(form.errors))
 
+    def test_url_from_another_shortener_is_rejected(self):
+        form = UrlForm({"original_url": "https://bit.ly/abc123"})
+        self.assertFalse(form.is_valid())
+        self.assertIn("another URL shortener", str(form.errors))
+
 
 class SafetyCheckTests(TestCase):
+    def test_recognizes_known_shortener_domains(self):
+        self.assertTrue(is_url_from_another_shortener("https://bit.ly/abc123"))
+        self.assertTrue(is_url_from_another_shortener("https://www.tinyurl.com/abc123"))
+
+    def test_allows_non_shortener_domains(self):
+        self.assertFalse(is_url_from_another_shortener("https://example.com/page"))
+        self.assertFalse(is_url_from_another_shortener("https://dvogiatz.com/shorty/"))
+
     @override_settings(SAFE_BROWSING_API_KEY="")
     def test_skips_check_when_no_api_key_configured(self):
         with patch("shorty_app.safety.urllib.request.urlopen") as mock_urlopen:
@@ -110,6 +124,7 @@ class SafetyCheckTests(TestCase):
         self.assertFalse(result)
 
 
+@override_settings(SAFE_BROWSING_API_KEY="")
 class ShortenViewTests(TestCase):
     def test_get_shows_empty_form(self):
         response = self.client.get(reverse("shorty"))
