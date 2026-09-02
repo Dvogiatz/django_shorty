@@ -38,6 +38,12 @@ body {
     align-items: center;
 }
 
+@media (min-width: 640px) {
+    .site-header .header-inner {
+        padding: 0 2rem;
+    }
+}
+
 .brand {
     display: flex;
     align-items: center;
@@ -56,6 +62,12 @@ main {
     max-width: 40rem;
     margin: 0 auto;
     padding: 4rem 1.5rem;
+}
+
+@media (min-width: 640px) {
+    main {
+        padding: 4rem 2rem;
+    }
 }
 
 .page-title {
