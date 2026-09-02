@@ -10,7 +10,11 @@ from django.utils import timezone
 
 from .forms import UrlForm
 from .models import FlaggedUrlAttempt, Url
-from .safety import is_url_flagged_unsafe, is_url_from_another_shortener
+from .safety import (
+    is_internationalized_domain,
+    is_url_flagged_unsafe,
+    is_url_from_another_shortener,
+)
 
 
 class UrlModelTests(TestCase):
@@ -81,6 +85,11 @@ class UrlFormTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("another URL shortener", str(form.errors))
 
+    def test_punycode_url_is_rejected(self):
+        form = UrlForm({"original_url": "https://xn--mnchen-3ya.de"})
+        self.assertFalse(form.is_valid())
+        self.assertIn("Internationalized domain", str(form.errors))
+
 
 class SafetyCheckTests(TestCase):
     def test_recognizes_known_shortener_domains(self):
@@ -90,6 +99,15 @@ class SafetyCheckTests(TestCase):
     def test_allows_non_shortener_domains(self):
         self.assertFalse(is_url_from_another_shortener("https://example.com/page"))
         self.assertFalse(is_url_from_another_shortener("https://dvogiatz.com/shorty/"))
+
+    def test_recognizes_punycode_domain(self):
+        self.assertTrue(is_internationalized_domain("https://xn--mnchen-3ya.de"))
+
+    def test_recognizes_literal_unicode_domain(self):
+        self.assertTrue(is_internationalized_domain("https://münchen.de"))
+
+    def test_allows_ascii_domains(self):
+        self.assertFalse(is_internationalized_domain("https://example.com/page"))
 
     @override_settings(SAFE_BROWSING_API_KEY="")
     def test_skips_check_when_no_api_key_configured(self):

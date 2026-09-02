@@ -32,6 +32,18 @@ def is_url_from_another_shortener(url):
     return hostname in KNOWN_SHORTENER_DOMAINS
 
 
+def is_internationalized_domain(url):
+    """Reject internationalized domain names — both already-encoded
+    punycode (xn--...) and literal Unicode hostnames, which are just two
+    encodings of the same thing. Closes off IDN homograph phishing (e.g. a
+    Cyrillic 'а' standing in for Latin 'a') as an attack vector entirely,
+    at the cost of also blocking legitimate non-Latin-script domains."""
+    hostname = urlparse(url).hostname or ""
+    if not hostname.isascii():
+        return True
+    return any(label.lower().startswith("xn--") for label in hostname.split("."))
+
+
 def is_url_flagged_unsafe(url):
     """Check a URL against Google Safe Browsing. Fails open (returns False)
     if no API key is configured, or if the check itself errors out — a
